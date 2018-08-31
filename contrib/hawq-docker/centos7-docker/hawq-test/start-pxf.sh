@@ -16,21 +16,21 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+export PXF_HOME=${GPHOME}/pxf
 
-if [ -z "${NAMENODE}" ]; then
-  export NAMENODE=${HOSTNAME}
-fi
+sudo passwd -d gpadmin
+sudo mkdir -p /var/run/pxf
+sudo mkdir -p /var/log/pxf
+sudo touch /var/log/pxf/catalina.out
+sudo chmod -R 777 /var/run/pxf
+sudo chmod -R 777 /var/log/pxf
 
-if [ ! -f /etc/profile.d/hadoop.sh ]; then
-  echo '#!/bin/bash' | sudo tee /etc/profile.d/hadoop.sh
-  echo "export NAMENODE=${NAMENODE}" | sudo tee -a /etc/profile.d/hadoop.sh
-  sudo chmod a+x /etc/profile.d/hadoop.sh
-fi
+echo "Initializing PXF Service"
+${PXF_HOME}/bin/pxf init
+echo "Initializing PXF Service Done!"
 
-sudo chmod 777 /etc/hadoop/conf/core-site.xml
-sudo sed "s/@hdfs.namenode@/$NAMENODE/g" -i /etc/hadoop/conf/core-site.xml
+echo "Starting PXF Service"
+${PXF_HOME}/bin/pxf start
+echo "Starting PXF Service Done!"
 
-sudo start-hdfs.sh
-sudo sysctl -p
-
-exec "$@"
+curl "localhost:51200/pxf/ProtocolVersion"

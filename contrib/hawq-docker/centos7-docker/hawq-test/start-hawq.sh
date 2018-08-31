@@ -16,21 +16,17 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+hawq stop cluster
+hdfs dfs -rm -r /hawq_default
+rm -rf /home/gpadmin/hawq-data-directory/masterdd
 
-if [ -z "${NAMENODE}" ]; then
-  export NAMENODE=${HOSTNAME}
-fi
+echo "Initializing HAWQ Cluster"
+hawq init cluster
+echo "Initializing HAWQ Cluster Done!"
 
-if [ ! -f /etc/profile.d/hadoop.sh ]; then
-  echo '#!/bin/bash' | sudo tee /etc/profile.d/hadoop.sh
-  echo "export NAMENODE=${NAMENODE}" | sudo tee -a /etc/profile.d/hadoop.sh
-  sudo chmod a+x /etc/profile.d/hadoop.sh
-fi
+echo "Starting HAWQ Cluster"
+sleep 5
+hawq start cluster
+echo "Starting HAWQ Cluster Done!"
 
-sudo chmod 777 /etc/hadoop/conf/core-site.xml
-sudo sed "s/@hdfs.namenode@/$NAMENODE/g" -i /etc/hadoop/conf/core-site.xml
-
-sudo start-hdfs.sh
-sudo sysctl -p
-
-exec "$@"
+hawq state cluster

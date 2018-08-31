@@ -31,6 +31,10 @@ RUN ln -s /usr/hdp/current/hadoop-hdfs-namenode/../hadoop/sbin/hadoop-daemon.sh 
 COPY conf/* /etc/hadoop/conf/
 
 COPY entrypoint.sh /usr/bin/entrypoint.sh
+COPY make-hawq.sh  /usr/bin/make-hawq.sh
+COPY make-pxf.sh   /usr/bin/make-pxf.sh
+COPY start-hawq.sh /usr/bin/start-hawq.sh
+COPY start-pxf.sh  /usr/bin/start-pxf.sh
 COPY start-hdfs.sh /usr/bin/start-hdfs.sh
 
 USER gpadmin

@@ -16,21 +16,21 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+git clone https://github.com/apache/incubator-hawq.git /data/hawq
 
-if [ -z "${NAMENODE}" ]; then
-  export NAMENODE=${HOSTNAME}
-fi
+cd /data/hawq
+./configure --prefix=${HAWQ_HOME}
+make -j8
+make install
 
-if [ ! -f /etc/profile.d/hadoop.sh ]; then
-  echo '#!/bin/bash' | sudo tee /etc/profile.d/hadoop.sh
-  echo "export NAMENODE=${NAMENODE}" | sudo tee -a /etc/profile.d/hadoop.sh
-  sudo chmod a+x /etc/profile.d/hadoop.sh
-fi
+source ${HAWQ_HOME}/greenplum_path.sh
 
-sudo chmod 777 /etc/hadoop/conf/core-site.xml
-sudo sed "s/@hdfs.namenode@/$NAMENODE/g" -i /etc/hadoop/conf/core-site.xml
+sudo sed 's|localhost|centos7-namenode|g' -i ${GPHOME}/etc/hawq-site.xml
+sudo echo 'centos7-datanode1' >  ${GPHOME}/etc/slaves
+sudo echo 'centos7-datanode2' >> ${GPHOME}/etc/slaves
+sudo echo 'centos7-datanode3' >> ${GPHOME}/etc/slaves
 
-sudo start-hdfs.sh
-sudo sysctl -p
+sudo -u hdfs hdfs dfs -chown gpadmin /
 
-exec "$@"
+echo "Make HAWQ Done!"
+

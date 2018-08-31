@@ -28,6 +28,8 @@ CLUSTER_ID := $(OS_VERSION)
 LOCAL := 
 # networks used in docker
 NETWORK := $(CLUSTER_ID)_hawq_network
+HAWQ_HOME := "/data/hawq-devel"
+JAVA_TOOL_OPTIONS := -Dfile.encoding=UTF8
 
 all: 
 	@echo " Usage:"
@@ -227,3 +229,38 @@ distclean:
 		docker network rm $(NETWORK) 2>&1 >/dev/null || true; \
 	fi
 	@echo "Distclean Done!"
+
+hawq:
+	@echo "Logging into ${CLUSTER_ID}-namenode container"
+	@if [ ! -z "`docker ps -a --filter="name=${CLUSTER_ID}-namenode" | grep -v CONTAINER`" ]; then \
+		docker exec -e "HAWQ_HOME=$(HAWQ_HOME)" -e "JAVA_TOOL_OPTIONS=$(JAVA_TOOL_OPTIONS)" \
+		-u gpadmin --privileged -it ${CLUSTER_ID}-namenode "/usr/bin/make-hawq.sh"; \
+	else \
+		echo "${CLUSTER_ID}-namenode container does not exist!"; \
+	fi
+
+pxf:
+	@make -f $(THIS_MAKEFILE_PATH) pxf-namenode
+	@i=1; \
+	while [ $$i -le $(NDATANODES) ] ; do \
+		make -f $(THIS_MAKEFILE_PATH) CUR_DATANODE=$$i pxf-datanode; \
+		i=$$((i+1)); \
+	done
+
+pxf-namenode:
+	@echo "Logging into ${CLUSTER_ID}-namenode container"
+	@if [ ! -z "`docker ps -a --filter="name=${CLUSTER_ID}-namenode" | grep -v CONTAINER`" ]; then \
+		docker exec -e "HAWQ_HOME=$(HAWQ_HOME)" -e "JAVA_TOOL_OPTIONS=$(JAVA_TOOL_OPTIONS)" \
+		-u gpadmin --privileged -it ${CLUSTER_ID}-namenode "/usr/bin/make-pxf.sh"; \
+	else \
+		echo "${CLUSTER_ID}-namenode container does not exist!" && exit 1; \
+	fi
+
+pxf-datanode:
+	@echo "Logging into ${CLUSTER_ID}-datanode$(CUR_DATANODE) container"
+	@if [ ! -z "`docker ps -a --filter="name=${CLUSTER_ID}-datanode$(CUR_DATANODE)" | grep -v CONTAINER`" ]; then \
+		docker exec -e "HAWQ_HOME=$(HAWQ_HOME)" -e "JAVA_TOOL_OPTIONS=$(JAVA_TOOL_OPTIONS)" \
+		-u gpadmin --privileged -it ${CLUSTER_ID}-datanode$(CUR_DATANODE) "/usr/bin/make-pxf.sh"; \
+	else \
+		echo "${CLUSTER_ID}-datanode$(CUR_DATANODE) container does not exist!" && exit 1; \
+	fi
